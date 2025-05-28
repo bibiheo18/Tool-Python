@@ -1,0 +1,83 @@
+INSTALL VÀ SETUP DỰ ÁN
+1. Cài python.exe nhớ tick vào 2 ô Add Python to PATH và Use admin privileges...
+2. Chạy lệnh python trên cmd rồi cài python 3.13 trên microsoft store
+3. Chạy terminal , chọn powershell, lệnh:
++ Chọn thư mục: cd [tên folder] vd: cd tool-test
++ Tạo môi trường ảo để cài thư viện: python -m venv venv
++ Kích hoạt môi trường: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
++ Bắt đầu: venv\Scripts\activate
+(Nếu có chữ venv trước câu lệnh là ổn)
+4. Cài selenium
++ Cài đặt: pip install selenium
++ Kiểm tra: pip list
+5. Cài Extensions
++ Trên VS nhớ cài extension Python, Pylance và Python Debugger
+6. Cài Driver Chrome trên terminal VS 
++ Cài đặt: pip install webdriver-manager
+7. Bắt đầu chạy dự án
++ python main.py
+
+CÁCH FIX LỖI KHÔNG TÌM THẤY THƯ VIỆN SELENIUM
+1. Mở Command Palette (Ctrl+Shift+P)
+
+2. Gõ: Python: Select Interpreter
+
+3. Chọn interpreter giống dòng này:
+
+.venv\Scripts\python.exe
+
+4. Nếu chưa có, chọn Enter Interpreter Path... > Find... > trỏ vào file python.exe trong thư mục venv\Scripts
+
+CÁCH CÀI DRIVER CHROME THỦ CÔNG
+1. https://googlechromelabs.github.io/chrome-for-testing/
+2. Kiếm bản DriverChrome x64 win phiên bản phù hợp
+3. Giải nén bỏ chromedriver.exe vào file project python vd: tool-test
+
+NẾU TRANG WEB KHÔNG CHO PASTE CODE VÀO CONSOLE
+Giải quyết: Nhập allow pasting vào console rồi enter
+
+SCRIPTS LẤY TỌA ĐỘ SCROLL CUỘN CHUỘT TRONG WEBSITE
+1. Vào console
+2. Gõ lệnh 
+console.log("Scroll X:", window.scrollX);
+console.log("Scroll Y:", window.scrollY);
+3. Enter và xem tọa độ X,Y
+
+SCRIPTS LẤY TỌA ĐỘ VỊ TRÍ CHUỘT TRONG WEBSITE
+1. Vào console
+2. Gõ lệnh 
+document.addEventListener("mousemove", function(e) {
+    console.log("Mouse X:", e.clientX, "Mouse Y:", e.clientY);
+});
+3. Enter và xem tọa độ X,Y
+
+THƯ VIỆN MÔ PHỎNG THAO TÁC CHUỘT + BÀN PHÍM VÀ QUẢN LÝ CỬA SỔ ỨNG DỤNG
+pip install pyautogui pygetwindow
+
+THƯ VIỆN ĐỂ COPY + PASTE TRONG CLIPBOARD(BỘ NHỚ TẠM THỜI)
+pip install pyperclip
+
+THƯ VIỆN XỬ LÝ ẢNH VÀ VIDEO NHƯ NHẬN DIỆN KHUÔN MẶT, TÌM HÌNH ẢNH THEO Y/C
+pip install opencv-python
+
+THƯ VIỆN OPENPYXL PYTHON CHUYÊN DÙNG ĐỂ ĐỌC, GHI VÀ CHỈNH SỬA FILE EXCEL
+pip install openpyxl
+
+FULL THƯ VIỆN
+pip install openpyxl pyautogui pygetwindow pyperclip
+
+SCRIPT XEM TỌA ĐỘ CHUỘT(CHẠY TRONG TERMINAL)
+# Chạy script dưới để xem tọa độ thủ công
+print("Di chuột vào vị trí cần đo. Nhấn Ctrl+C để thoát.")
+try:
+    while True:
+        x, y = pyautogui.position()
+        print(f"Tọa độ hiện tại: ({x}, {y})", end="\r")
+except KeyboardInterrupt:
+    print("\nKết thúc.")
+
+THƯ VIỆN ĐI KÈM HÀM LOCATEONSCREEN
+Hàm pyautogui.locateOnScreen() phụ thuộc vào thư viện pyscreeze và Pillow
+pip install --upgrade pip
+pip install pyscreeze
+pip install pillow

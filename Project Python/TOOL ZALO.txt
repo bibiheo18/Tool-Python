@@ -1,0 +1,335 @@
+CÁCH CHẠY PROJECT
+1. Chọn cd đúng folder project vd: cd tool-test
+2. Chạy môi trường ảo: venv\Scripts\activate
+3. Chạy dự án: python zalo.py
+
+
+
+
+-- ĐÂY LÀ CODE ZALO ĐÃ KẾT HỢP EXCEL -- NHANH X10
+
+import pyautogui            # Thư viện điều khiển chuột, bàn phím tự động
+import pygetwindow as gw    # Thư viện để lấy danh sách và thao tác cửa sổ ứng dụng
+import subprocess           # Dùng để mở ứng dụng (Excel, Zalo)
+import time                 # Thư viện dùng để delay giữa các thao tác
+import pyperclip            # Thư viện để thao tác với clipboard (copy/paste nhanh, an toàn)
+
+# ========== CẤU HÌNH ==========
+excel_path = r"D:\Project Python\tool-test\dsUser.xlsx"  # Đường dẫn file Excel chứa danh sách SĐT
+zalo_path = r"C:\Users\bibih\AppData\Local\Programs\Zalo\Zalo.exe"  # Đường dẫn ứng dụng Zalo
+start_row = 2        # Dòng bắt đầu (bỏ dòng tiêu đề)
+end_row = 30         # Dòng kết thúc (số dòng cần kiểm tra)
+
+# ========== KHỞI ĐỘNG ỨNG DỤNG ==========
+subprocess.Popen(["start", "excel", excel_path], shell=True)  # Mở Excel
+subprocess.Popen(zalo_path)                                    # Mở Zalo
+time.sleep(3)  # Chờ ứng dụng load xong (giảm từ 5s → 3s để nhanh hơn)
+
+# ========== HÀM HỖ TRỢ ==========
+
+# Chuyển sang cửa sổ ứng dụng theo tiêu đề (Excel hoặc Zalo)
+def switch_to_window(title):
+    windows = gw.getWindowsWithTitle(title)
+    if windows:
+        win = windows[0]
+        win.activate()   # Đưa cửa sổ lên trước
+        win.maximize()   # Phóng to toàn màn hình
+        time.sleep(0.3)  # Delay ngắn để đảm bảo cửa sổ đã sẵn sàng
+
+# Đi tới và chọn ô Excel cụ thể (vd: C5, F10)
+def goto_and_focus_cell(cell_ref):
+    pyautogui.hotkey("ctrl", "g")      # Mở hộp thoại "Go To"
+    time.sleep(0.1)
+    pyperclip.copy(cell_ref)           # Copy địa chỉ ô vào clipboard
+    pyautogui.hotkey("ctrl", "v")      # Dán vào hộp thoại
+    pyautogui.press("enter")           # Nhảy đến ô chỉ định
+    time.sleep(0.1)
+    pyautogui.press("esc")             # Thoát khỏi hộp thoại
+    time.sleep(0.1)
+
+# Xóa ô tìm kiếm trong Zalo trước khi tìm mới
+def clear_zalo_search():
+    pyautogui.moveTo(147, 70, duration=0)  # Di chuyển nhanh đến ô tìm kiếm Zalo (tọa độ cố định)
+    pyautogui.click()                      # Click vào ô
+    pyautogui.hotkey("ctrl", "a")          # Chọn hết nội dung
+    pyautogui.press("delete")              # Xóa nội dung cũ
+    time.sleep(0.1)
+
+# ========== BẮT ĐẦU KIỂM TRA DANH SÁCH SĐT ==========
+for row in range(start_row, end_row + 1):
+    cell_sdt = f"C{row}"           # Ô chứa số điện thoại (cột C)
+    cell_trang_thai = f"F{row}"    # Ô ghi trạng thái kết quả (cột F)
+
+    # Lấy số điện thoại từ Excel
+    switch_to_window("Excel")             # Chuyển sang Excel
+    goto_and_focus_cell(cell_sdt)         # Di chuyển tới ô chứa SĐT
+    pyautogui.hotkey("ctrl", "c")         # Copy SĐT vào clipboard
+    time.sleep(0.1)
+    sdt = pyperclip.paste().strip()       # Lấy SĐT và xóa khoảng trắng
+
+    if not sdt:
+        continue  # Bỏ qua nếu ô rỗng
+
+    print(f"🔍 Đang kiểm tra: {sdt}")
+
+    # Tìm kiếm trong Zalo
+    switch_to_window("Zalo")              # Chuyển sang Zalo
+    clear_zalo_search()                   # Xóa tìm kiếm cũ
+    pyperclip.copy(sdt)                   # Copy SĐT
+    pyautogui.hotkey("ctrl", "v")         # Dán vào ô tìm kiếm Zalo
+    time.sleep(1.5)                       # Chờ Zalo hiện kết quả (giảm từ 2s → 1.5s)
+
+    # Kiểm tra hình ảnh báo không tìm thấy hoặc chưa đăng ký
+    try:
+        not_found = pyautogui.locateOnScreen("not_found.png", confidence=0.6)
+    except:
+        not_found = None
+
+    try:
+        not_registered = pyautogui.locateOnScreen("not_registered.png", confidence=0.6)
+    except:
+        not_registered = None
+
+    # Xử lý kết quả
+    if not_registered:
+        print(f"⚠️ SĐT chưa đăng ký hoặc không cho phép tìm kiếm: {sdt}")
+        status = "SĐT chưa đăng ký"
+    elif not_found:
+        print(f"❌ Không tìm thấy người này: {sdt}")
+        status = "Không tìm thấy người này"
+    else:
+        print(f"✅ Tìm thấy: {sdt}")
+        # Click vào kết quả tìm thấy để xác nhận
+        pyautogui.moveTo(140, 235, duration=0.05)
+        pyautogui.click()
+        time.sleep(0.5)
+        status = "X"
+
+    # Ghi kết quả trở lại Excel
+    switch_to_window("Excel")                 # Quay lại Excel
+    goto_and_focus_cell(cell_trang_thai)      # Di chuyển đến ô ghi kết quả
+    pyperclip.copy(status)                    # Copy nội dung trạng thái
+    pyautogui.hotkey("ctrl", "v")             # Dán vào ô
+    pyautogui.press("enter")                  # Xác nhận
+    print(f"✔️ Đã ghi '{status}' vào {cell_trang_thai}")
+
+    time.sleep(0.3)  # Delay nhẹ trước khi qua dòng tiếp theo
+
+print("🎉 Đã hoàn thành kiểm tra tất cả số điện thoại.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- ĐÂY LÀ CODE ZALO ĐÃ KẾT HỢP EXCEL -- CHẠY BÌNH THƯỜNG, ỔN ĐỊNH
+
+import pyautogui            # Thư viện điều khiển chuột và bàn phím
+import pygetwindow as gw    # Thư viện để lấy và chuyển đổi giữa các cửa sổ
+import subprocess           # Dùng để mở file, ứng dụng
+import time                 # Thư viện để xử lý thời gian, sleep
+import pyperclip            # Dùng để thao tác với clipboard (copy/paste văn bản)
+
+# ========== CẤU HÌNH ==========
+excel_path = r"D:\Project Python\tool-test\dsUser.xlsx"  # Đường dẫn file Excel chứa danh sách SĐT
+zalo_path = r"C:\Users\bibih\AppData\Local\Programs\Zalo\Zalo.exe"  # Đường dẫn tới ứng dụng Zalo
+start_row = 2      # Dòng bắt đầu (bỏ dòng tiêu đề)
+end_row = 30       # Dòng kết thúc (tùy chỉnh theo số dòng dữ liệu thực tế)
+
+# ========== MỞ EXCEL VÀ ZALO ==========
+# Mở file Excel
+subprocess.Popen(["start", "excel", excel_path], shell=True)
+
+# Mở ứng dụng Zalo
+subprocess.Popen(zalo_path)
+
+# Chờ cả 2 ứng dụng khởi động xong
+time.sleep(5)
+
+# ========== HÀM HỖ TRỢ ==========
+
+# Chuyển sang cửa sổ theo tiêu đề
+def switch_to_window(title):
+    windows = gw.getWindowsWithTitle(title)
+    if windows:
+        win = windows[0]
+        win.activate()    # Chuyển cửa sổ lên trước
+        win.maximize()    # Phóng to cửa sổ
+        time.sleep(1)
+
+# Đi tới và chọn ô Excel theo địa chỉ (vd: C5, F7...)
+def goto_and_focus_cell(cell_ref):
+    pyautogui.hotkey("ctrl", "g")     # Mở hộp thoại "Go to"
+    time.sleep(0.2)
+    pyperclip.copy(cell_ref)         # Copy địa chỉ ô vào clipboard
+    pyautogui.hotkey("ctrl", "v")    # Dán vào hộp thoại
+    pyautogui.press("enter")         # Nhảy đến ô chỉ định
+    time.sleep(0.2)
+    pyautogui.press("esc")           # Thoát khỏi chế độ "go to"
+    time.sleep(0.2)
+
+# Xóa nội dung đang có trong ô tìm kiếm của Zalo
+def clear_zalo_search():
+    pyautogui.moveTo(147, 70, duration=0.3)  # Di chuyển chuột đến ô tìm kiếm (tọa độ cố định)
+    pyautogui.click()                        # Click vào ô
+    pyautogui.hotkey("ctrl", "a")            # Chọn hết nội dung
+    pyautogui.press("delete")                # Xóa
+    time.sleep(0.3)
+
+# ========== DUYỆT DANH SÁCH SỐ ĐIỆN THOẠI ==========
+for row in range(start_row, end_row + 1):
+    cell_sdt = f"C{row}"           # Địa chỉ ô chứa SĐT (cột C)
+    cell_trang_thai = f"F{row}"    # Địa chỉ ô ghi trạng thái (cột F)
+
+    # Lấy số điện thoại từ Excel
+    switch_to_window("Excel")             # Chuyển sang cửa sổ Excel
+    goto_and_focus_cell(cell_sdt)         # Di chuyển đến ô chứa SĐT
+    pyautogui.hotkey("ctrl", "c")         # Copy nội dung ô
+    time.sleep(0.3)
+    sdt = pyperclip.paste().strip()       # Dán và loại bỏ khoảng trắng
+
+    if not sdt:
+        continue  # Nếu ô trống thì bỏ qua
+
+    print(f"🔍 Đang kiểm tra: {sdt}")
+
+    # Tìm kiếm trong Zalo
+    switch_to_window("Zalo")              # Chuyển sang cửa sổ Zalo
+    clear_zalo_search()                   # Xóa tìm kiếm cũ
+    pyperclip.copy(sdt)                   # Copy số điện thoại
+    pyautogui.hotkey("ctrl", "v")         # Dán vào ô tìm kiếm Zalo
+    time.sleep(2)                         # Đợi kết quả hiện lên
+
+    # Tìm ảnh thông báo không tìm thấy
+    try:
+        not_found = pyautogui.locateOnScreen("not_found.png", confidence=0.6)
+    except:
+        not_found = None
+
+    # Tìm ảnh thông báo chưa đăng ký
+    try:
+        not_registered = pyautogui.locateOnScreen("not_registered.png", confidence=0.6)
+    except:
+        not_registered = None
+
+    # Phân loại kết quả tìm kiếm
+    if not_registered:
+        print(f"⚠️ SĐT chưa đăng ký hoặc không cho phép tìm kiếm: {sdt}")
+        status = "SĐT chưa đăng ký"
+    elif not_found:
+        print(f"❌ Không tìm thấy người này: {sdt}")
+        status = "Không tìm thấy người này"
+    else:
+        print(f"✅ Tìm thấy: {sdt}")
+        # Click vào người dùng Zalo để xác nhận
+        pyautogui.moveTo(140, 235, duration=0.3)  # Tọa độ kết quả tìm thấy
+        pyautogui.click()
+        time.sleep(1)
+        status = "X"
+
+    # Ghi kết quả vào ô tương ứng trong Excel
+    switch_to_window("Excel")                 # Chuyển lại sang Excel
+    goto_and_focus_cell(cell_trang_thai)      # Di chuyển đến ô ghi trạng thái
+    pyperclip.copy(status)                    # Copy kết quả
+    pyautogui.hotkey("ctrl", "v")             # Dán vào ô
+    pyautogui.press("enter")                  # Xác nhận
+    print(f"✔️ Đã ghi '{status}' vào {cell_trang_thai}")
+
+    time.sleep(1)
+
+print("🎉 Đã hoàn thành kiểm tra tất cả số điện thoại.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- ĐÂY LÀ CODE ZALO KHI CHƯA CÓ EXCEL --
+
+# TOOL AUTO TÌM RỒI GỬI TIN NHẮN TRONG ZALO
+import pyautogui
+import pygetwindow as gw
+import subprocess
+import time
+import pyperclip  # Dùng để xử lý clipboard
+
+# Mở Zalo (nếu chưa mở)
+subprocess.Popen(r"C:\Users\bibih\AppData\Local\Programs\Zalo\Zalo.exe")
+time.sleep(1)
+
+# Tìm cửa sổ Zalo, đưa cửa sổ Zalo ra phía trước và phóng to
+windows = gw.getWindowsWithTitle("Zalo")
+if not windows:
+    print("❌ Không tìm thấy cửa sổ Zalo.")
+    exit()
+
+zalo_window = windows[0]
+zalo_window.activate()
+zalo_window.maximize()
+time.sleep(1)
+
+# Hàm tìm kiếm và xử lý kết quả
+def tim_kiem_va_click(ten_can_tim):
+    # Click vào ô tìm kiếm
+    pyautogui.moveTo(147, 70, duration=0.5)
+    pyautogui.click()
+    # Xóa nội dung cũ
+    pyautogui.hotkey("ctrl", "a")
+    pyautogui.press("delete")
+    time.sleep(0.2)
+    # Dán nội dung mới
+    pyperclip.copy(ten_can_tim)
+    pyautogui.hotkey("ctrl", "v")
+    time.sleep(2)
+
+    try:
+        not_found = pyautogui.locateOnScreen("not_found.png", confidence=0.6)
+        if not_found:
+            print(f"❌ Không tìm thấy kết quả với từ khóa: {ten_can_tim}")
+            return False
+        else:
+            print(f"✅ Tìm thấy kết quả với từ khóa: {ten_can_tim}")
+            pyautogui.moveTo(140, 235, duration=0.5)
+            pyautogui.click()
+            print("🖱️ Đã click vào kết quả tìm kiếm.")
+            return True
+    except pyautogui.ImageNotFoundException:
+        print("✅ Tìm thấy kết quả.")
+        # Trường hợp này được hiểu là TÌM THẤY (vì không tìm ra hình ảnh "không tìm thấy")
+        pyautogui.moveTo(140, 235, duration=0.5)
+        pyautogui.click()
+        print("🖱️ Đã click vào kết quả tìm kiếm.")
+        return True
+
+# Thử tìm người đầu tiên
+tim_thay = tim_kiem_va_click("0908415553")
+
+# Nếu không tìm thấy thì thử tìm người khác
+if not tim_thay:
+    print("📭 Đã xóa và dán nội dung mới trong ô tìm kiếm.")
+    tim_lai = tim_kiem_va_click("Ba")
+    if not tim_lai:
+        print("📭 Vẫn không tìm thấy kết quả sau khi tìm lại.")
+
+Đây là code chạy ổn của tui
+
+
